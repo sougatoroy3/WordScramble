@@ -15,7 +15,7 @@ struct ContentView: View {
     @State private var errorTitle = ""
     @State private var errorMessage = ""
     @State private var showingError = false
-    
+    @State private var score = 0
     func addNewWord() {
         // lowercase and trim the word, to make sure we don't add duplicate words with case differences
         let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -39,8 +39,14 @@ struct ContentView: View {
             return
         }
         
+        guard isShorterThan3(word: answer) else {
+            wordError(title: "Word too short", message: "Words must be 3 letters or shorter")
+            return
+        }
+        
         withAnimation{
             usedWords.insert(answer, at: 0)
+            score += 1
         }
         newWord = ""
     }
@@ -55,7 +61,8 @@ struct ContentView: View {
 
                 // 4. Pick one random word, or use "silkworm" as a sensible default
                 rootWord = allWords.randomElement() ?? "silkworm"
-
+                
+                score = 0
                 // If we are here everything has worked, so we can exit
                 return
             }
@@ -90,6 +97,10 @@ struct ContentView: View {
         return misspelledRange.location == NSNotFound
     }
     
+    func isShorterThan3(word: String) -> Bool {
+        return word.count >= 3
+    }
+    
     func wordError(title: String, message: String) {
         errorTitle = title
         errorMessage = message
@@ -99,6 +110,11 @@ struct ContentView: View {
     var body: some View {
         NavigationStack{
             List{
+                Section{
+                    Text("Your Score: \(score)")
+                        .bold(true)
+                }
+                
                 Section{
                     TextField("Enter your word", text: $newWord)
                         .textInputAutocapitalization(.never)
@@ -113,7 +129,11 @@ struct ContentView: View {
                     }
                 }
             }
+            
             .navigationTitle(rootWord)
+            .toolbar{
+                Button("Restart", action: startGame)
+            }
             .onSubmit(addNewWord)
             .onAppear(perform: startGame)
             .alert(errorTitle, isPresented: $showingError) {
